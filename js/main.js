@@ -314,6 +314,7 @@ const App = (() => {
       </div>
       <div class="emo-actions">
         <button class="btn" data-action="gen-cell" data-id="${item.id}">🎨 그리기</button>
+        <button class="btn mini" data-action="auto-cell" data-id="${item.id}" title="표정·상황 자동 채우기 (라벨 기반)">🤖</button>
         <button class="btn mini" data-action="edit-cell" data-id="${item.id}" title="다듬기">🪄</button>
         <button class="btn mini" data-action="base-cell" data-id="${item.id}" title="기준 캐릭터로 지정">⭐</button>
         <button class="btn mini" data-action="del-cell" data-id="${item.id}" title="칸 삭제">🗑️</button>
@@ -369,6 +370,50 @@ const App = (() => {
       showToast(`📋 ${items.length}칸을 구성했어요!`, 'success');
     } catch (e) { setProc('s-progress', stepErr(e.message || e)); }
     finally { $('s-suggest-set').disabled = false; }
+  }
+
+  // 빈 칸(라벨 또는 표정·상황이 비어있는 칸)의 항목을 AI로 채움 — 비파괴(이미 적은 값은 보존)
+  async function autoFillEmpties() {
+    if (!ConfigModal.hasValidConfig()) { showToast('먼저 ⚙️ 설정에서 Gemini API 키를 입력하세요.', 'error'); ConfigModal.open(); return; }
+    const proj = activeProject(); if (!proj) return;
+    if (!proj.items.length) { showToast('먼저 ＋ 칸 추가나 🤖 세트 자동 구성으로 칸을 만들어주세요.', 'error'); return; }
+    if (!proj.items.some(it => !it.situation || !it.label)) { showToast('채울 빈 칸이 없어요 — 모든 칸에 라벨·표정·상황이 있어요.', 'error'); return; }
+    const btn = $('s-autofill'); if (btn) btn.disabled = true;
+    setProc('s-progress', stepRunning('빈 칸의 표정·상황을 채우는 중...'));
+    try {
+      const res = await GeminiText.fillSet({ name: proj.concept.name, tagline: proj.concept.tagline }, proj.items);
+      proj.items.forEach((it, i) => {
+        const r = res[i] || {};
+        if (!it.label && r.label) it.label = r.label;
+        if (!it.situation && r.situation) it.situation = r.situation;
+        if (!it.text && r.text) it.text = r.text;
+      });
+      Store.saveProject(proj);
+      setProc('s-progress', '');
+      renderSetGrid();
+      showToast('✨ 빈 칸을 채웠어요! 마음에 안 들면 칸별 🤖로 다시 채울 수 있어요.', 'success');
+    } catch (e) { setProc('s-progress', stepErr(e.message || e)); }
+    finally { if (btn) btn.disabled = false; }
+  }
+
+  // 한 칸의 표정·상황(+빈 문구)을 라벨 기반으로 자동 생성 — 표정·상황은 덮어쓰고 라벨은 있으면 보존
+  async function autoFillCell(id) {
+    if (!ConfigModal.hasValidConfig()) { showToast('먼저 ⚙️ 설정에서 Gemini API 키를 입력하세요.', 'error'); ConfigModal.open(); return; }
+    const proj = activeProject(); if (!proj) return;
+    const item = proj.items.find(x => x.id === id); if (!item) return;
+    setProc('s-progress', stepRunning(`'${escapeHtml(item.label || '이 칸')}'의 표정·상황을 만드는 중...`));
+    try {
+      const res = await GeminiText.fillSet({ name: proj.concept.name, tagline: proj.concept.tagline }, [item]);
+      const r = res[0] || {};
+      commitItem(proj.id, id, (it) => {
+        if (!it.label && r.label) it.label = r.label; // 라벨은 있으면 그대로
+        if (r.situation) it.situation = r.situation;   // 표정·상황은 새로 채움(덮어쓰기)
+        if (!it.text && r.text) it.text = r.text;       // 문구는 비어있을 때만
+      });
+      setProc('s-progress', '');
+      renderSetGrid();
+      showToast('✨ 표정·상황을 채웠어요!', 'success');
+    } catch (e) { setProc('s-progress', stepErr(e.message || e)); }
   }
 
   function addItem() {
@@ -624,6 +669,7 @@ const App = (() => {
     'use-concept': (d) => { const c = (d.src === 'idea' ? _lastIdeas : _lastConcepts)[parseInt(d.idx, 10)]; if (c) createProjectFromConcept(c, d.spec); },
     'remove-ref': (d) => { state.refs = state.refs.filter(r => r.id !== d.id); renderRefs(); },
     'gen-cell': (d) => genCell(d.id),
+    'auto-cell': (d) => autoFillCell(d.id),
     'edit-cell': (d) => openEdit(d.id),
     'base-cell': (d) => setBaseChar(d.id),
     'del-cell': (d) => delCell(d.id),
@@ -702,6 +748,7 @@ const App = (() => {
     // 작업실
     $('studio-blank').addEventListener('click', () => { createBlankProject(); });
     $('s-suggest-set').addEventListener('click', suggestSet);
+    $('s-autofill').addEventListener('click', autoFillEmpties);
     $('s-add-item').addEventListener('click', addItem);
     $('s-gen-all').addEventListener('click', genAll);
     $('studio-save').addEventListener('click', saveStudioConcept);

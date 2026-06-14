@@ -189,5 +189,47 @@ const GeminiText = (() => {
     }));
   }
 
-  return { planConcepts, ideate, suggestSetList };
+  // ── 표정·상황 자동 채우기 ─────────────────────────────────────
+  //  items의 빈 항목(라벨/표정·상황/문구)만 채워 돌려준다. 이미 값이 있는 항목은 그대로 둔다.
+  //  (프런트가 '비파괴 병합' 또는 '칸별 덮어쓰기'를 골라 적용)
+  async function fillSet(concept, items) {
+    const list = (items || []).map((it, i) => ({
+      no: it.no || i + 1, label: it.label || '', situation: it.situation || '', text: it.text || '',
+    }));
+    if (!list.length) throw new Error('채울 칸이 없습니다.');
+    const lines = list.map(it => `${it.no}) 라벨:"${it.label}" 표정·상황:"${it.situation}" 문구:"${it.text}"`).join('\n');
+    const prompt = [
+      '아래 이모티콘 캐릭터의 세트 칸들을 채워줘.',
+      `- 캐릭터: ${concept.name || ''} / ${concept.tagline || ''}`,
+      concept.personality ? `- 성격: ${concept.personality}` : '',
+      '',
+      '[현재 칸 목록] (빈 값은 "" 로 표시됨):',
+      lines,
+      '',
+      '[규칙]',
+      '- 각 칸에서 비어있는 항목만 채워. 이미 값이 있는 항목(라벨/표정·상황/문구)은 절대 바꾸지 마.',
+      '- 라벨이 있으면 그 라벨에 어울리는 "표정·상황"을 캐릭터가 취하는 표정·동작·상황으로 그릴 수 있게 구체적으로 써.',
+      '- 라벨에 어울리는 짧은 한국어 문구도 채워(문구가 굳이 필요 없으면 빈 문자열 "").',
+      '- 라벨이 비어 있으면 다른 칸과 겹치지 않는 새 표현으로 라벨까지 채워.',
+      '- 메신저에서 자주 쓰는 표현으로, 칸들끼리 의미가 겹치지 않게 다양하게.',
+      '',
+      `출력: {"items":[${list.length}개]} — 입력과 같은 개수·순서. 각 항목은 {"no","label","situation","text"}. JSON만, 다른 말 금지.`,
+    ].filter(Boolean).join('\n');
+
+    const text = await _call([{ text: prompt }], {
+      temperature: 0.9, maxOutputTokens: 8192, responseMimeType: 'application/json',
+      thinkingConfig: { thinkingBudget: 0 },
+    });
+    const r = _parseJSON(text);
+    const out = Array.isArray(r) ? r : (r.items || []);
+    if (!out.length) throw new Error('표정·상황을 만들지 못했습니다 — 다시 시도해 주세요.');
+    return out.map((it, i) => ({
+      no: it.no || (list[i] && list[i].no) || i + 1,
+      label: (it.label || '').toString().slice(0, 20),
+      situation: (it.situation || '').toString(),
+      text: (it.text || '').toString().slice(0, 20),
+    }));
+  }
+
+  return { planConcepts, ideate, suggestSetList, fillSet };
 })();

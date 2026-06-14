@@ -248,11 +248,12 @@
               <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                 <span>📋 표정·상황 세트 <span id="s-setcount" class="hint" style="font-weight:400;"></span></span>
                 <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                  <button id="s-suggest-set" class="btn btn-ghost" style="padding:7px 11px;">🤖 세트 자동 구성</button>
+                  <button id="s-suggest-set" class="btn btn-ghost" style="padding:7px 11px;" title="현재 규격 종수만큼 세트를 처음부터 새로 구성(전체 교체)">🤖 세트 자동 구성</button>
+                  <button id="s-autofill" class="btn btn-ghost" style="padding:7px 11px;" title="비어있는 칸의 표정·상황을 AI가 채움(기존 입력은 보존)">✨ 빈 칸 자동 채우기</button>
                   <button id="s-add-item" class="btn btn-ghost" style="padding:7px 11px;">＋ 칸 추가</button>
                 </div>
               </div>
-              <div class="hint">각 칸은 이모티콘 1개예요. 표정/상황/글자를 적고 <b>🎨 그리기</b>를 누르면 그 칸의 초안이 생성돼요. <b>기준 캐릭터</b>를 지정하면 나머지를 같은 캐릭터로 일관되게 그려요.</div>
+              <div class="hint">각 칸은 이모티콘 1개예요. 표정/상황/글자를 적고 <b>🎨 그리기</b>를 누르면 그 칸의 초안이 생성돼요. 라벨만 적고 칸의 <b>🤖</b>를 누르면 <b>표정·상황을 자동으로</b> 채워줘요. <b>기준 캐릭터</b>(⭐)를 지정하면 나머지를 같은 캐릭터로 일관되게 그려요.</div>
               <div id="s-set-grid" class="set-grid"></div>
               <div class="row" style="margin-top:14px; align-items:center;">
                 <button id="s-gen-all" class="btn">🎨 비어있는 칸 모두 그리기</button>
@@ -395,10 +396,10 @@
     } catch (e) { console.error('config 로드 에러:', e); }
   </script>
 
-  <script src="js/gemini.js?v=1"></script>
+  <script src="js/gemini.js?v=2"></script>
   <script src="js/image.js?v=1"></script>
   <script src="js/store.js?v=1"></script>
   <script src="js/config_modal.js?v=1"></script>
-  <script src="js/main.js?v=1"></script>
+  <script src="js/main.js?v=2"></script>
 </body>
 </html>
