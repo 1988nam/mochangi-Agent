@@ -13,5 +13,6 @@ window.MOCHANGI_CONFIG = {
   TEXT_MODEL: 'gemini-2.5-flash',           // 컨셉 기획·아이디에이션(항상 Gemini)
   ASPECT_RATIO: '1:1',                      // 카카오 이모티콘은 정사각 권장
   CLIENT_ID: '',                            // 구글 드라이브 동기화용 OAuth Client ID(웹). 비우면 동기화 비활성
-  SCOPES: 'https://www.googleapis.com/auth/drive.file',  // 앱이 만든 파일만 접근(최소 권한)
+  FOLDER_ID: '1H5b46InMhIs3zNWzyWYvIs3VL5VMb-PV',  // 저장 폴더 고정(URL/ID). 비우면 앱이 '모챙이 데이터' 폴더 자동 생성
+  SCOPES: 'https://www.googleapis.com/auth/drive',  // 지정 폴더(직접 만든 폴더)에 쓰려면 전체 드라이브 범위 필요. 자동폴더만 쓰면 drive.file로 축소 가능
 };

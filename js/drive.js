@@ -39,8 +39,25 @@ const DriveAPI = (() => {
     return btoa(binary);
   }
 
-  // 전용 폴더 확보(없으면 생성). 캐시 + 휴지통 확인.
+  // 드라이브 URL/ID 어느 쪽이 와도 ID만 추출
+  function _extractId(s) {
+    s = String(s == null ? '' : s).trim();
+    const m = s.match(/\/folders\/([a-zA-Z0-9_-]{10,})/) || s.match(/[?&]id=([a-zA-Z0-9_-]{10,})/) || s.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
+    return m ? m[1] : s;
+  }
+
+  // 전용 폴더 확보. 설정에 FOLDER_ID가 박혀 있으면 그 폴더를 그대로 사용(전체 드라이브 범위 필요).
   async function ensureFolder() {
+    const cfg = window.MOCHANGI_CONFIG || {};
+    const fixed = cfg.FOLDER_ID && String(cfg.FOLDER_ID).trim();
+    if (fixed) {
+      const id = _extractId(fixed);
+      let m;
+      try { m = await _json(`${API}/files/${id}?fields=id,trashed`); }
+      catch (e) { throw new Error('지정한 드라이브 폴더에 접근할 수 없어요 — 폴더 ID와 권한(전체 드라이브 범위)을 확인하세요.'); }
+      if (m.trashed) throw new Error('지정한 폴더가 휴지통에 있어요.');
+      return id;
+    }
     const cached = localStorage.getItem(LS_FOLDER);
     if (cached) {
       // 휴지통 + 이름 일치까지 확인(다른 폴더로 캐시가 어긋난 경우 방지)

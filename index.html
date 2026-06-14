@@ -352,9 +352,11 @@
 
       <div class="field" style="border-top:1px solid var(--border); margin-top:12px; padding-top:14px;">
         <label>☁️ 구글 드라이브 동기화 <span style="color:var(--text-muted); font-size:11px;">(기기 간 이어서 작업)</span></label>
-        <div class="hint" style="margin-top:0;">로그인하면 프로젝트·이모티콘이 <b>내 구글 드라이브의 '모챙이 데이터' 폴더</b>에 저장돼, 다른 기기·브라우저에서도 이어서 작업할 수 있어요. 권한은 <code>drive.file</code>(앱이 만든 파일만)만 씁니다.</div>
+        <div class="hint" style="margin-top:0;">로그인하면 프로젝트·이모티콘이 <b>지정한 드라이브 폴더</b>에 저장돼, 다른 기기·브라우저에서도 이어서 작업할 수 있어요. 지정 폴더(직접 만든 폴더)에 쓰려면 <b>전체 드라이브 권한</b>이 필요해요.</div>
         <input type="text" id="cfg-client-id" placeholder="Google OAuth Client ID (...apps.googleusercontent.com)" style="margin-top:8px;" />
         <div class="hint">구글 클라우드 콘솔 → OAuth 클라이언트(웹)를 만들고, <b>승인된 JavaScript 원본</b>에 이 사이트 주소(예: https://mochangi.pages.dev)를 추가하세요.</div>
+        <input type="text" id="cfg-folder-id" placeholder="저장할 드라이브 폴더 ID 또는 URL (비우면 자동 폴더)" style="margin-top:8px;" />
+        <div class="hint">저장 폴더가 <b>고정</b>돼 있어요. 다른 폴더를 쓰려면 폴더 URL/ID를 붙여넣으세요. 비우면 앱이 <code>모챙이 데이터</code> 폴더를 자동 생성합니다.</div>
         <div style="display:flex; gap:8px; margin-top:8px;">
           <button type="button" id="drive-connect" class="btn btn-ghost" style="flex:1; padding:9px;">🔗 구글 계정 연결</button>
           <button type="button" id="drive-disconnect" class="btn btn-ghost" style="flex:1; padding:9px;">연결 해제</button>
@@ -409,7 +411,8 @@
       TEXT_MODEL: 'gemini-2.5-flash',
       ASPECT_RATIO: '1:1',
       CLIENT_ID: '',                                              // 구글 드라이브 동기화용 OAuth Client ID
-      SCOPES: 'https://www.googleapis.com/auth/drive.file',        // 앱이 만든 파일만 접근(최소 권한)
+      FOLDER_ID: '1H5b46InMhIs3zNWzyWYvIs3VL5VMb-PV',              // 저장 폴더 고정(지정 폴더). 비우면 앱이 '모챙이 데이터' 폴더 자동 생성
+      SCOPES: 'https://www.googleapis.com/auth/drive',             // 지정 폴더(사용자가 만든 폴더)에 쓰려면 전체 드라이브 범위 필요
     };
     for (const k in _defaults) if (MOCHANGI_CONFIG[k] === undefined) MOCHANGI_CONFIG[k] = _defaults[k];
     try {
@@ -426,9 +429,9 @@
   <script src="js/openai.js?v=1"></script>
   <script src="js/store.js?v=2"></script>
   <script src="js/auth.js?v=2"></script>
-  <script src="js/drive.js?v=2"></script>
+  <script src="js/drive.js?v=3"></script>
   <script src="js/sync.js?v=2"></script>
-  <script src="js/config_modal.js?v=3"></script>
+  <script src="js/config_modal.js?v=4"></script>
   <script src="js/main.js?v=6"></script>
 
   <!-- Google Identity Services (드라이브 동기화 OAuth) -->

@@ -7,6 +7,7 @@ const ConfigModal = (() => {
     GEMINI_API_KEY: 'cfg-gemini-key',
     OPENAI_API_KEY: 'cfg-openai-key',
     CLIENT_ID: 'cfg-client-id',
+    FOLDER_ID: 'cfg-folder-id',
     IMAGE_MODEL: 'cfg-image-model',
     TEXT_MODEL: 'cfg-text-model',
     ASPECT_RATIO: 'cfg-aspect',
