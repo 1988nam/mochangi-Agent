@@ -66,10 +66,22 @@ const App = (() => {
   async function imgUrl(imageId) {
     if (!imageId) return '';
     if (_imgCache.has(imageId)) return _imgCache.get(imageId);
-    const im = await Store.getImage(imageId);
+    let im = await Store.getImage(imageId);
+    // 로컬에 없으면(다른 기기에서 만든 이미지) 드라이브에서 지연 다운로드 후 캐싱
+    if ((!im || !im.data) && typeof Sync !== 'undefined' && Sync.active && Sync.active()) {
+      im = await Sync.fetchImage(imageId);
+      if (im && im.data) { try { await Store.saveImage(imageId, im, { fromSync: true }); } catch (_) {} }
+    }
     const url = Store.dataUrl(im);
     if (url) _imgCache.set(imageId, url);
     return url;
+  }
+  // 동기화(pull) 후 화면 갱신 — Sync에서 호출
+  function afterSync() {
+    setTimeout(() => _imgCache.clear(), 0); // 진행 중인 imgUrl 체인이 끝난 뒤 비움(불필요한 재요청 방지)
+    renderProjectList();
+    if (!$('view-studio').classList.contains('hidden')) renderStudio();
+    if (!$('view-gallery').classList.contains('hidden')) renderGallery();
   }
 
   // 파일/Blob → 다운스케일한 {mime,data(base64),url}  (레퍼런스 분석용 — 비용·토큰 절약)
@@ -699,6 +711,8 @@ const App = (() => {
   function onConfigSaved() {
     // 설정 저장 직후, 아직 시작 화면이면 바로 앱으로 진입
     if (ConfigModal.hasValidConfig() && $('app').classList.contains('hidden')) enterApp();
+    // CLIENT_ID가 새로 들어왔을 수 있으니 GIS 재초기화(캐시 토큰 자동 로그인/연결 대비)
+    if (typeof Auth !== 'undefined' && Auth.initGis) { try { Auth.initGis(); } catch (_) {} }
   }
 
   function bindSelectCustom(selId, fieldId) {
@@ -717,6 +731,24 @@ const App = (() => {
     $('cfg-save').addEventListener('click', () => ConfigModal.save());
     $('cfg-export-btn').addEventListener('click', () => ConfigModal.exportConfig());
     $('cfg-import-btn').addEventListener('click', () => ConfigModal.importConfig());
+
+    // 구글 드라이브 동기화
+    if (typeof Sync !== 'undefined') {
+      Sync.init();
+      const sb = $('sync-btn'); if (sb) sb.addEventListener('click', () => Sync.syncNow());
+      const dc = $('drive-connect'); if (dc) dc.addEventListener('click', () => {
+        const cid = (($('cfg-client-id') && $('cfg-client-id').value) || '').trim();
+        if (!cid) { showToast('Google CLIENT_ID를 먼저 입력하세요.', 'error'); return; }
+        if (cid.indexOf('apps.googleusercontent.com') === -1) { showToast('CLIENT_ID 형식이 이상해요 — …apps.googleusercontent.com 형태여야 합니다.', 'error'); return; }
+        window.MOCHANGI_CONFIG.CLIENT_ID = cid;
+        try { const s = JSON.parse(localStorage.getItem('mochangi_config') || '{}'); s.CLIENT_ID = cid; localStorage.setItem('mochangi_config', JSON.stringify(s)); } catch (_) {}
+        const ok = Auth.initGis ? Auth.initGis() : true;
+        if (!ok) { showToast('구글 로그인 초기화에 실패했어요 — CLIENT_ID/스크립트를 확인하세요.', 'error'); return; }
+        ConfigModal.close();
+        Sync.connect();
+      });
+      const dd = $('drive-disconnect'); if (dd) dd.addEventListener('click', () => Sync.disconnect());
+    }
 
     // 도움말
     $('help-btn').addEventListener('click', () => $('help-modal').classList.remove('hidden'));
@@ -805,7 +837,7 @@ const App = (() => {
     if (ConfigModal.hasValidConfig()) enterApp();
   }
 
-  return { init, onConfigSaved };
+  return { init, onConfigSaved, afterSync };
 })();
 
 document.addEventListener('DOMContentLoaded', App.init);

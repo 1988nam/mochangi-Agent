@@ -12,4 +12,6 @@ window.MOCHANGI_CONFIG = {
   OPENAI_PROXY: '',                         // 비우면 같은 오리진 '/api/openai-image' 사용. 로컬에서 배포 프록시를 쓰려면 절대 URL 지정
   TEXT_MODEL: 'gemini-2.5-flash',           // 컨셉 기획·아이디에이션(항상 Gemini)
   ASPECT_RATIO: '1:1',                      // 카카오 이모티콘은 정사각 권장
+  CLIENT_ID: '',                            // 구글 드라이브 동기화용 OAuth Client ID(웹). 비우면 동기화 비활성
+  SCOPES: 'https://www.googleapis.com/auth/drive.file',  // 앱이 만든 파일만 접근(최소 권한)
 };

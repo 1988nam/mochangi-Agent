@@ -64,6 +64,24 @@ npx serve .
 
 > ⚠️ 위 수치는 **참고 기본값**입니다. 실제 제출 규격(종수·해상도·용량·파일형식)은 수시로 바뀌니, 제출 전 **[카카오 이모티콘 스튜디오](https://emoticonstudio.kakao.com/)**에서 최신 가이드를 반드시 확인하세요. 제출 자체도 스튜디오에서 직접 합니다.
 
+## 기기 간 동기화 (Google Drive)
+
+기본은 **이 브라우저에만** 저장돼서 다른 기기에선 안 보여요. 구글 드라이브를 연결하면 **프로젝트·이모티콘이 내 드라이브의 `모챙이 데이터` 폴더에 저장**되어 어느 기기에서든 이어서 작업할 수 있어요. (서버리스 유지 — 브라우저가 구글 API를 직접 호출)
+
+- **저장 방식**: 프로젝트 메타 = `mochangi_projects.json` 1개, 이미지 = `<id>.png` 파일들. 이미지는 **원본 PNG 그대로**(투명도 보존).
+- **권한**: `drive.file` — 앱이 만든 파일만 접근(내 드라이브 전체를 보지 않음).
+- **동작**: 로그인 시 자동으로 내려받아 병합 → 이후 변경마다 자동 업로드. 이미지는 필요할 때 지연 다운로드. 사이드바 ☁️ 버튼으로 수동 동기화.
+- **병합**: 프로젝트별 최신본 우선 + 삭제 전파(데이터 손실 방지).
+
+### 설정 방법 (한 번만)
+1. [Google Cloud Console](https://console.cloud.google.com/) → **API 및 서비스 → 사용자 인증 정보 → OAuth 클라이언트 ID(웹 애플리케이션)** 생성.
+2. **승인된 JavaScript 원본**에 사용하는 주소 추가: `https://mochangi.pages.dev` (로컬도 쓰면 `http://localhost:5500` 등).
+3. **API 및 서비스 → 라이브러리**에서 **Google Drive API** 사용 설정.
+4. OAuth 동의 화면에 `.../auth/drive.file` 범위 추가(테스트 사용자에 본인 계정 등록).
+5. 모챙이 ⚙️ 설정 → **구글 드라이브 동기화**에 Client ID 붙여넣고 **🔗 구글 계정 연결**.
+
+> 💡 다챙이 등 기존 0챙이 앱에서 쓰던 OAuth 클라이언트가 있으면, 그 클라이언트의 **승인된 원본에 `mochangi.pages.dev`만 추가**해서 같은 Client ID를 재사용해도 됩니다.
+
 ## 파일 구조
 
 ```
@@ -72,11 +90,17 @@ mochangi-Agent/
 ├─ style.css           # 0챙이 시리즈 다크 테마 + 이모티콘 컴포넌트
 ├─ js/
 │  ├─ gemini.js        # 텍스트 생성: 컨셉 기획 · 레퍼런스 아이디에이션 · 세트 구성
-│  ├─ image.js         # Nano Banana 이미지 생성/편집(다듬기)
-│  ├─ store.js         # IndexedDB(이미지) + localStorage(프로젝트)
-│  ├─ config_modal.js  # API 키/모델 설정
+│  ├─ image.js         # Nano Banana(Gemini) 이미지 생성/편집(다듬기)
+│  ├─ openai.js        # GPT(OpenAI) 이미지 — 프록시 경유 (현재 선택지에선 숨김, 코드 보존)
+│  ├─ store.js         # IndexedDB(이미지) + localStorage(프로젝트) + 동기화 훅
+│  ├─ auth.js          # Google OAuth(GIS, drive.file)
+│  ├─ drive.js         # Google Drive REST (폴더·JSON·이미지 업/다운)
+│  ├─ sync.js          # 드라이브 동기화 오케스트레이션(풀/푸시/병합/지연다운)
+│  ├─ config_modal.js  # API 키/모델/Client ID 설정
 │  ├─ config.example.js# 설정 예시(선택)
 │  └─ main.js          # 컨트롤러(라우팅·전체 와이어링)
+├─ functions/
+│  └─ api/openai-image.js  # OpenAI 이미지 CORS 우회 프록시 (Cloudflare Pages Function)
 └─ README.md
 ```
 

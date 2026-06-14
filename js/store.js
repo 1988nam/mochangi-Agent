@@ -30,14 +30,17 @@ const Store = (() => {
   }
 
   // ── 이미지 (IndexedDB) ──
-  async function saveImage(id, img) {
+  //  opts.fromSync=true: 드라이브에서 받아 캐싱하는 경우 — 다시 업로드하지 않도록 훅 생략
+  async function saveImage(id, img, opts) {
     const db = await _open();
-    return new Promise((resolve, reject) => {
+    await new Promise((resolve, reject) => {
       const tx = db.transaction(IMG_STORE, 'readwrite');
       tx.objectStore(IMG_STORE).put({ mime: img.mime || 'image/png', data: img.data }, id);
-      tx.oncomplete = () => resolve(id);
+      tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error || new Error('이미지 저장 실패'));
     });
+    if (!(opts && opts.fromSync) && window.Sync && Sync.onImage) { try { Sync.onImage(id, img); } catch (_) {} }
+    return id;
   }
   async function getImage(id) {
     if (!id) return null;
@@ -49,15 +52,16 @@ const Store = (() => {
       r.onerror = () => reject(r.error || new Error('이미지 로드 실패'));
     });
   }
-  async function deleteImage(id) {
+  async function deleteImage(id, opts) {
     if (!id) return;
     const db = await _open();
-    return new Promise((resolve) => {
+    await new Promise((resolve) => {
       const tx = db.transaction(IMG_STORE, 'readwrite');
       tx.objectStore(IMG_STORE).delete(id);
       tx.oncomplete = () => resolve();
       tx.onerror = () => resolve();
     });
+    if (!(opts && opts.fromSync) && window.Sync && Sync.onImageDelete) { try { Sync.onImageDelete(id); } catch (_) {} }
   }
   function dataUrl(img) { return img && img.data ? `data:${img.mime || 'image/png'};base64,${img.data}` : ''; }
 
@@ -75,8 +79,12 @@ const Store = (() => {
     if (i === -1) { project.createdAt = project.createdAt || Date.now(); list.unshift(project); }
     else list[i] = project;
     _writeProjects(list);
+    if (window.Sync && Sync.onMeta) { try { Sync.onMeta(); } catch (_) {} }
     return project;
   }
+
+  // 병합 결과 등 전체 목록을 한 번에 교체(동기화 훅 발생 안 함)
+  function replaceAllProjects(list) { _writeProjects(Array.isArray(list) ? list : []); }
 
   async function deleteProject(id) {
     const proj = getProject(id);
@@ -89,6 +97,7 @@ const Store = (() => {
       for (const imgId of ids) { try { await deleteImage(imgId); } catch (_) {} }
     }
     _writeProjects(getProjects().filter(p => p.id !== id));
+    if (window.Sync && Sync.onMeta) { try { Sync.onMeta(); } catch (_) {} }
   }
 
   // 한 컷이 가진 이미지 수(완성 개수) 카운트
@@ -96,5 +105,5 @@ const Store = (() => {
     return (project.items || []).filter(it => it && it.imageId).length;
   }
 
-  return { newId, saveImage, getImage, deleteImage, dataUrl, getProjects, getProject, saveProject, deleteProject, countDone };
+  return { newId, saveImage, getImage, deleteImage, dataUrl, getProjects, getProject, saveProject, replaceAllProjects, deleteProject, countDone };
 })();
