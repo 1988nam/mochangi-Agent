@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Ctext%20y='.9em'%20font-size='90'%3E🎨%3C/text%3E%3C/svg%3E" />
+  <title>모챙이 🎨 AI 이모티콘 메이커</title>
+  <meta name="theme-color" content="#0b1020" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="모챙이" />
+  <link rel="stylesheet" href="style.css?v=1" />
+</head>
+<body>
+
+  <!-- 시작 화면 -->
+  <div id="login-screen">
+    <div class="login-card">
+      <div class="logo">🎨</div>
+      <h1>모챙이</h1>
+      <p>주제·컨셉을 같이 기획하고,<br/>AI가 카카오 이모티콘 초안을 그려주고 다듬어주는 에이전트</p>
+      <div style="margin-top: 22px; display:flex; flex-direction:column; gap:10px;">
+        <button id="start-btn" class="btn btn-block">▶️ 시작하기</button>
+        <button id="login-config-btn" class="btn btn-ghost btn-block">⚙️ Gemini API 키 설정</button>
+      </div>
+      <p style="margin-top:16px; font-size:11px;">Gemini API 키 하나면 됩니다. 키·작업물은 이 브라우저에만 저장됩니다(localStorage·IndexedDB).</p>
+    </div>
+  </div>
+
+  <!-- 앱 -->
+  <div id="app" class="hidden">
+    <div class="layout">
+      <!-- 모바일 상단바 -->
+      <div class="mobile-topbar">
+        <button id="sidebar-toggle" class="icon-btn" aria-label="메뉴 열기">☰</button>
+        <span class="mobile-title">🎨 모챙이</span>
+      </div>
+
+      <!-- 사이드바 -->
+      <aside class="sidebar">
+        <div class="side-logo">🎨 모챙이 <span class="badge">이모티콘</span><button id="sidebar-close" class="icon-btn sidebar-close" aria-label="메뉴 닫기">✕</button></div>
+        <nav class="side-nav">
+          <button class="side-item active" data-view="concept" aria-current="page">🧠 컨셉 기획</button>
+          <button class="side-item" data-view="ideate">🖼️ 레퍼런스 아이디에이션</button>
+          <button class="side-item" data-view="studio">✨ 이모티콘 작업실 <span class="side-badge" id="studio-badge" style="display:none;"></span></button>
+          <button class="side-item" data-view="gallery">📦 보관함</button>
+          <button class="side-item" id="side-settings">⚙️ 설정</button>
+        </nav>
+        <div class="side-sec">
+          <span>📁 내 프로젝트</span>
+          <button id="new-project" class="btn btn-ghost" style="padding:3px 8px; font-size:11px;" title="새 프로젝트">＋</button>
+        </div>
+        <div id="project-list" class="month-list"><div class="hint" style="padding:6px 4px;">아직 프로젝트가 없어요.<br/>컨셉 기획부터 시작해 보세요!</div></div>
+        <div class="side-foot">
+          <span class="user-chip" id="active-project-chip">진행 중인 프로젝트 없음</span>
+          <button id="help-btn" class="btn btn-ghost" style="padding:6px 10px;" title="도움말">❓</button>
+        </div>
+      </aside>
+
+      <!-- 메인 -->
+      <main class="main">
+
+        <!-- ===== 1. 컨셉 기획 ===== -->
+        <div id="view-concept" class="view">
+          <div class="topbar">
+            <div class="title">🧠 컨셉 기획 <span class="badge">함께 기획</span></div>
+          </div>
+          <div class="card">
+            <div class="card-title">① 어떤 이모티콘을 만들까요?</div>
+            <div class="hint">주제와 톤(컨셉)을 고르면, AI가 캐릭터·세계관·표정 세트 구성까지 담은 <b>컨셉안 여러 개</b>를 제안해요. 마음에 드는 안을 골라 바로 작업실로 넘길 수 있어요.</div>
+            <div class="row" style="margin-top:14px;">
+              <div class="field">
+                <label>주제</label>
+                <select id="c-subject">
+                  <option value="동물">🐾 동물</option>
+                  <option value="사물">📦 사물</option>
+                  <option value="사람/캐릭터">🧑 사람 / 캐릭터</option>
+                  <option value="음식">🍙 음식</option>
+                  <option value="식물">🌱 식물</option>
+                  <option value="직장인">💼 직장인 공감</option>
+                  <option value="커플/친구">💞 커플 / 친구</option>
+                  <option value="__custom">✏️ 직접 입력...</option>
+                </select>
+              </div>
+              <div class="field" id="c-subject-custom-field" style="display:none; flex:1; min-width:180px;">
+                <label>주제 직접 입력</label>
+                <input type="text" id="c-subject-custom" placeholder="예: 햄스터, 식빵, 텀블러" />
+              </div>
+              <div class="field">
+                <label>톤 / 컨셉</label>
+                <select id="c-tone">
+                  <option value="병맛">🤪 병맛 (어이없고 웃긴)</option>
+                  <option value="귀여움">🥰 귀여움 (말랑·사랑스러움)</option>
+                  <option value="진지/감성">🌙 진지 / 감성</option>
+                  <option value="시니컬/팩폭">😏 시니컬 / 팩폭</option>
+                  <option value="힐링/응원">🍀 힐링 / 응원</option>
+                  <option value="과장/하이텐션">🔥 과장 / 하이텐션</option>
+                  <option value="무표정/심플">😐 무표정 / 미니멀</option>
+                  <option value="__custom">✏️ 직접 입력...</option>
+                </select>
+              </div>
+              <div class="field" id="c-tone-custom-field" style="display:none; flex:1; min-width:180px;">
+                <label>톤 직접 입력</label>
+                <input type="text" id="c-tone-custom" placeholder="예: 츤데레, B급 유머" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:10px;">
+              <div class="field" style="flex:1; min-width:240px;">
+                <label>타깃 / 쓰임새 (선택)</label>
+                <input type="text" id="c-target" placeholder="예: 2030 직장인, 단톡방에서 드립칠 때" />
+              </div>
+              <div class="field" style="flex:1; min-width:240px;">
+                <label>꼭 넣고 싶은 키워드·상황 (선택)</label>
+                <input type="text" id="c-keywords" placeholder="예: 야근, 월요병, 칼퇴 (쉼표로 구분)" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:10px;">
+              <div class="field">
+                <label>제안 받을 컨셉안 수</label>
+                <input type="number" id="c-count" value="3" min="1" max="5" style="width:90px;" />
+              </div>
+              <div class="field">
+                <label>이모티콘 규격 (플랫폼)</label>
+                <select id="c-spec">
+                  <option value="kakao_still">카카오 · 멈춰있는 (32종)</option>
+                  <option value="kakao_anim">카카오 · 움직이는 (24종)</option>
+                  <option value="kakao_big">카카오 · 큰 (16종)</option>
+                </select>
+              </div>
+              <button id="c-generate" class="btn" style="align-self:flex-end;">🧠 컨셉안 만들기</button>
+            </div>
+            <div class="hint" id="c-spec-hint" style="margin-top:8px;"></div>
+            <div id="c-progress"></div>
+          </div>
+
+          <div id="c-results"></div>
+        </div>
+
+        <!-- ===== 2. 레퍼런스 아이디에이션 ===== -->
+        <div id="view-ideate" class="view hidden">
+          <div class="topbar">
+            <div class="title">🖼️ 레퍼런스 아이디에이션 <span class="badge">표절 NO</span></div>
+          </div>
+          <div class="card">
+            <div class="card-title">① 좋아하는 이모티콘을 캡쳐해서 올려주세요</div>
+            <div class="hint">
+              <b>카카오톡에서 직접 불러오는 건 불가능</b>해요(구매 이모티콘을 가져오는 공개 API가 없어요). 대신 좋아하는 이모티콘을 <b>캡쳐/저장해 올리면</b>,
+              AI가 그 <b>스타일의 추상적 특징만</b>(선 굵기·색감·비율·유머 코드·구도) 뽑아내고, <b>캐릭터·디자인은 그대로 베끼지 않는</b> 완전히 새로운 컨셉으로 변형 제안해요.
+              ⚠️ 업로드 이미지는 <b>스타일 분석에만</b> 쓰여요 — 그 특징을 <b>글(텍스트)로만</b> 뽑아내고, <b>이미지 생성에는 넣지 않습니다.</b> 그림은 당신의 새 컨셉으로 처음부터 새로 그려요(표절 방지).
+            </div>
+            <div id="ref-dropzone" class="dropzone" tabindex="0" role="button" aria-label="레퍼런스 이미지 업로드 — Enter·Space 또는 클릭으로 파일 선택, 드래그·붙여넣기도 가능">
+              <div class="dropzone-inner">
+                <div style="font-size:34px;">📥</div>
+                <div>여기로 <b>드래그</b>하거나 <b>붙여넣기(Ctrl+V)</b> · 클릭해서 파일 선택</div>
+                <div class="hint" style="margin-top:4px;">PNG/JPG · 여러 장 가능</div>
+              </div>
+              <input type="file" id="ref-file" accept="image/*" multiple hidden />
+            </div>
+            <div id="ref-thumbs" class="ref-thumbs"></div>
+
+            <div class="row" style="margin-top:14px;">
+              <div class="field">
+                <label>변형할 내 주제</label>
+                <select id="i-subject">
+                  <option value="동물">🐾 동물</option>
+                  <option value="사물">📦 사물</option>
+                  <option value="사람/캐릭터">🧑 사람 / 캐릭터</option>
+                  <option value="음식">🍙 음식</option>
+                  <option value="식물">🌱 식물</option>
+                  <option value="__custom">✏️ 직접 입력...</option>
+                </select>
+              </div>
+              <div class="field" id="i-subject-custom-field" style="display:none; flex:1; min-width:180px;">
+                <label>주제 직접 입력</label>
+                <input type="text" id="i-subject-custom" placeholder="예: 펭귄" />
+              </div>
+              <div class="field" style="flex:1; min-width:200px;">
+                <label>원하는 변화 / 메모 (선택)</label>
+                <input type="text" id="i-note" placeholder="예: 더 동글동글하게, 색은 파스텔로" />
+              </div>
+              <button id="i-generate" class="btn" style="align-self:flex-end;">💡 분석 & 변형 아이디어</button>
+            </div>
+            <div id="i-progress"></div>
+          </div>
+
+          <div id="i-results"></div>
+        </div>
+
+        <!-- ===== 3. 이모티콘 작업실 ===== -->
+        <div id="view-studio" class="view hidden">
+          <div class="topbar">
+            <div class="title">✨ 이모티콘 작업실</div>
+            <div class="topbar-actions">
+              <button id="studio-save" class="btn btn-ghost" style="padding:8px 12px;" title="프로젝트 저장">💾 프로젝트 저장</button>
+            </div>
+          </div>
+
+          <div id="studio-empty" class="card">
+            <div class="card-title">작업실 시작하기</div>
+            <div class="hint"><b>🧠 컨셉 기획</b>이나 <b>🖼️ 레퍼런스 아이디에이션</b>에서 컨셉을 고르면 자동으로 여기로 불러와져요. 또는 아래 버튼으로 <b>빈 컨셉부터 직접</b> 시작할 수도 있어요.</div>
+            <button id="studio-blank" class="btn btn-ghost" style="margin-top:12px;">✏️ 빈 컨셉으로 시작</button>
+          </div>
+
+          <div id="studio-body" class="hidden">
+            <!-- 컨셉 요약(편집 가능) -->
+            <div class="card">
+              <div class="card-title">🎯 작업 컨셉 <span class="hint" style="font-weight:400;">— 여기 내용이 모든 그림의 기준이 돼요</span></div>
+              <div class="row">
+                <div class="field" style="flex:1; min-width:200px;">
+                  <label>캐릭터 이름</label>
+                  <input type="text" id="s-name" placeholder="예: 식빵냥" />
+                </div>
+                <div class="field" style="flex:2; min-width:240px;">
+                  <label>한 줄 컨셉</label>
+                  <input type="text" id="s-tagline" placeholder="예: 만사 귀찮은 식빵 모양 고양이" />
+                </div>
+              </div>
+              <div class="field" style="margin-top:10px;">
+                <label>비주얼 스타일 (그림 톤 — 모든 이모티콘에 공통 적용)</label>
+                <textarea id="s-style" rows="3" placeholder="예: 굵고 균일한 검정 외곽선, 둥글둥글한 비율, 파스텔 크림색 몸통, 단순한 점 눈, 납작한 식빵 실루엣, 평면 플랫 채색"></textarea>
+              </div>
+              <div class="row" style="margin-top:6px;">
+                <div class="field">
+                  <label>규격</label>
+                  <select id="s-spec">
+                    <option value="kakao_still">카카오 · 멈춰있는 (32종)</option>
+                    <option value="kakao_anim">카카오 · 움직이는 (24종)</option>
+                    <option value="kakao_big">카카오 · 큰 (16종)</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>배경</label>
+                  <select id="s-bg">
+                    <option value="transparent">투명 배경 (제출용)</option>
+                    <option value="white">흰 배경</option>
+                    <option value="soft">연한 단색 배경</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>이미지 모델</label>
+                  <select id="s-model"></select>
+                </div>
+              </div>
+            </div>
+
+            <!-- 표정/상황 세트 -->
+            <div class="card">
+              <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <span>📋 표정·상황 세트 <span id="s-setcount" class="hint" style="font-weight:400;"></span></span>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <button id="s-suggest-set" class="btn btn-ghost" style="padding:7px 11px;">🤖 세트 자동 구성</button>
+                  <button id="s-add-item" class="btn btn-ghost" style="padding:7px 11px;">＋ 칸 추가</button>
+                </div>
+              </div>
+              <div class="hint">각 칸은 이모티콘 1개예요. 표정/상황/글자를 적고 <b>🎨 그리기</b>를 누르면 그 칸의 초안이 생성돼요. <b>기준 캐릭터</b>를 지정하면 나머지를 같은 캐릭터로 일관되게 그려요.</div>
+              <div id="s-set-grid" class="set-grid"></div>
+              <div class="row" style="margin-top:14px; align-items:center;">
+                <button id="s-gen-all" class="btn">🎨 비어있는 칸 모두 그리기</button>
+                <span class="hint" id="s-gen-hint"></span>
+              </div>
+              <div id="s-progress"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== 4. 보관함 ===== -->
+        <div id="view-gallery" class="view hidden">
+          <div class="topbar">
+            <div class="title">📦 보관함</div>
+            <div class="topbar-actions">
+              <button id="g-refresh" class="btn btn-ghost" style="padding:8px 12px;" title="보관함 새로고침">🔄 새로고침</button>
+            </div>
+          </div>
+          <div id="g-projects"></div>
+        </div>
+
+      </main>
+    </div>
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+  </div>
+
+  <!-- 다듬기(편집) 모달 -->
+  <div id="edit-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3>🪄 다듬기</h3>
+      <div class="edit-preview"><img id="edit-img" alt="" /></div>
+      <div class="field">
+        <label>어떻게 바꿀까요? (자연어로)</label>
+        <textarea id="edit-instruction" rows="2" placeholder="예: 입을 더 크게 벌려 웃게, 라인을 더 두껍게, 배경을 투명하게, 손에 커피 추가"></textarea>
+      </div>
+      <div class="edit-chips">
+        <button class="chip" data-edit="외곽선을 더 굵고 선명하게 다듬어줘">라인 굵게</button>
+        <button class="chip" data-edit="표정을 더 과장되고 웃기게 바꿔줘">더 웃기게</button>
+        <button class="chip" data-edit="배경을 완전한 투명(알파)으로 만들어줘. 캐릭터만 남겨줘">배경 투명</button>
+        <button class="chip" data-edit="색을 더 선명하고 채도 높게">색 선명하게</button>
+        <button class="chip" data-edit="더 단순하고 깔끔하게 정리해줘">심플하게</button>
+        <button class="chip" data-edit="글자를 더 크고 읽기 쉽게">글자 키우기</button>
+      </div>
+      <div id="edit-history" class="edit-history"></div>
+      <div id="edit-progress"></div>
+      <div class="modal-actions">
+        <button id="edit-cancel" class="btn btn-ghost">닫기</button>
+        <button id="edit-apply" class="btn">🪄 다듬어서 새 버전 만들기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 설정 모달 -->
+  <div id="config-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3>⚙️ 설정</h3>
+      <div class="field">
+        <label>Gemini API Key <span style="color:var(--text-muted); font-size:11px;">(필수)</span></label>
+        <input type="password" id="cfg-gemini-key" placeholder="AI Studio에서 발급한 키 (AIza...)" />
+        <div class="hint">Google AI Studio(aistudio.google.com)에서 무료로 발급돼요. 이미지 생성은 유료 등급/크레딧이 필요할 수 있어요.</div>
+      </div>
+      <div class="field">
+        <label>이미지 모델 (이모티콘 그림 생성)</label>
+        <select id="cfg-image-model">
+          <option value="gemini-3-pro-image">gemini-3-pro-image (Nano Banana Pro · 최고 품질·한글)</option>
+          <option value="gemini-2.5-flash-image">gemini-2.5-flash-image (Nano Banana · 빠르고 저렴)</option>
+          <option value="gemini-3.1-flash-image">gemini-3.1-flash-image (Nano Banana 2)</option>
+        </select>
+        <div class="hint">기본은 품질 우선 Pro예요. 비용을 아끼려면 Flash로 바꾸세요.</div>
+      </div>
+      <div class="field">
+        <label>텍스트 모델 (컨셉 기획·아이디에이션)</label>
+        <select id="cfg-text-model">
+          <option value="gemini-2.5-flash">gemini-2.5-flash (권장)</option>
+          <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+          <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>이미지 비율</label>
+        <select id="cfg-aspect">
+          <option value="1:1">1:1 (정사각 — 카카오 권장)</option>
+          <option value="4:5">4:5</option>
+          <option value="3:4">3:4</option>
+        </select>
+      </div>
+      <div class="field" style="border-top:1px solid var(--border); margin-top:12px; padding-top:14px;">
+        <label>📲 설정 내보내기 / 가져오기</label>
+        <div class="hint" style="margin-top:0;">다른 기기로 옮기거나 백업할 때 사용하세요.</div>
+        <textarea id="cfg-io-area" rows="2" style="font-family:monospace; font-size:11px;" placeholder="가져올 설정 코드를 붙여넣고 [설정 적용하기]를 누르세요..."></textarea>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button type="button" id="cfg-export-btn" class="btn btn-ghost" style="flex:1; padding:9px;">📤 설정 복사</button>
+          <button type="button" id="cfg-import-btn" class="btn btn-ghost" style="flex:1; padding:9px;">📥 설정 적용</button>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="cfg-cancel" class="btn btn-ghost">취소</button>
+        <button id="cfg-save" class="btn">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 도움말 모달 -->
+  <div id="help-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3>❓ 모챙이 사용법</h3>
+      <div class="help-body">
+        <p><b>1. 🧠 컨셉 기획</b> — 주제(동물/사물 등)와 톤(병맛/귀여움 등)을 고르면 AI가 캐릭터·세계관·표정 세트까지 담은 컨셉안을 여러 개 제안해요.</p>
+        <p><b>2. 🖼️ 레퍼런스 아이디에이션</b> — 좋아하는 이모티콘을 캡쳐해 올리면, 스타일의 추상적 특징만 분석해 <b>표절 아닌</b> 새 컨셉으로 변형 제안해요.</p>
+        <p><b>3. ✨ 작업실</b> — 컨셉을 기준으로 실제 이모티콘 이미지를 그리고, 마음에 안 들면 자연어로 <b>다듬어요</b>. 기준 캐릭터를 정하면 세트 전체가 같은 캐릭터로 일관되게 나와요.</p>
+        <p><b>4. 📦 보관함</b> — 완성한 세트를 모아 PNG/ZIP로 내려받아요.</p>
+        <hr style="border-color:var(--border); margin:14px 0;" />
+        <p style="color:var(--text-muted);">📌 <b>카카오 이모티콘 제출</b>은 <a href="https://emoticonstudio.kakao.com/" target="_blank" rel="noopener" style="color:var(--accent);">카카오 이모티콘 스튜디오</a>에서 직접 해요. 모챙이가 넣은 규격(종수·사이즈)은 <b>참고 기본값</b>이니, 제출 전 스튜디오에서 최신 규격을 꼭 확인하세요.</p>
+        <p style="color:var(--text-muted);">📌 표절·저작권: 올린 레퍼런스는 분석에만 쓰고 그림에 직접 넣지 않아요. 그래도 특정 캐릭터·브랜드를 똑같이 만들지 않도록 직접 확인하는 책임은 창작자에게 있어요.</p>
+      </div>
+      <div class="modal-actions">
+        <button id="help-close" class="btn">알겠어요</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <!-- 기본 설정 + localStorage 병합 -->
+  <script>
+    window.MOCHANGI_CONFIG = (typeof MOCHANGI_CONFIG !== 'undefined') ? MOCHANGI_CONFIG : {};
+    const _defaults = {
+      GEMINI_API_KEY: '',
+      IMAGE_MODEL: 'gemini-3-pro-image',
+      TEXT_MODEL: 'gemini-2.5-flash',
+      ASPECT_RATIO: '1:1',
+    };
+    for (const k in _defaults) if (MOCHANGI_CONFIG[k] === undefined) MOCHANGI_CONFIG[k] = _defaults[k];
+    try {
+      const stored = localStorage.getItem('mochangi_config');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        for (const k in parsed) if (parsed[k] !== undefined && parsed[k] !== null) MOCHANGI_CONFIG[k] = parsed[k];
+      }
+    } catch (e) { console.error('config 로드 에러:', e); }
+  </script>
+
+  <script src="js/gemini.js?v=1"></script>
+  <script src="js/image.js?v=1"></script>
+  <script src="js/store.js?v=1"></script>
+  <script src="js/config_modal.js?v=1"></script>
+  <script src="js/main.js?v=1"></script>
+</body>
+</html>

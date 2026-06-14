@@ -1,0 +1,9 @@
+.git
+node_modules
+.claude
+.github
+*.md
+.gitignore
+.assetsignore
+js/config.js
+js/config.example.js

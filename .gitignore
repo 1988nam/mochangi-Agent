@@ -1,0 +1,13 @@
+# 로컬 키 파일(절대 커밋 금지 — 실제 Gemini 키가 들어감)
+js/config.js
+config.js
+
+# Cloudflare
+.wrangler/
+.dev.vars
+
+# OS / 에디터
+.DS_Store
+Thumbs.db
+*.log
+node_modules/
