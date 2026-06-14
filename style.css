@@ -26,6 +26,9 @@ body {
 button { font-family: inherit; cursor: pointer; }
 a { color: var(--accent2); }
 code { background: var(--bg-elevated); padding: 1px 6px; border-radius: 5px; font-size: 12px; }
+img { max-width: 100%; }
+/* 긴 단어/URL이 좁은 화면에서 가로로 넘치지 않게 */
+.concept-tagline, .concept-grid .v, .gal-title, .gal-sub, .hint, .help-body p { overflow-wrap: anywhere; }
 
 /* 시작 화면 */
 #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
@@ -123,7 +126,19 @@ textarea { width: 100%; resize: vertical; line-height: 1.6; }
 .set-preview { margin-top: 10px; }
 .set-preview summary { cursor: pointer; color: var(--text-muted); font-size: 12px; font-weight: 700; }
 .set-preview ol { margin: 8px 0 0; padding-left: 20px; columns: 2; font-size: 12.5px; color: var(--text-secondary); line-height: 1.7; }
-@media (max-width: 640px) { .concept-grid { grid-template-columns: 1fr; } .set-preview ol { columns: 1; } }
+/* 모바일/소형 태블릿 폼 — 필드를 세로로 쌓고 입력칸이 가로폭을 채우게 */
+@media (max-width: 640px) {
+  .concept-grid { grid-template-columns: 1fr; }
+  .set-preview ol { columns: 1; }
+  .row { gap: 10px; }
+  .row > .field { flex-grow: 1; flex-basis: 100%; min-width: 0; }
+  .field > select,
+  .field > input[type="text"],
+  .field > input[type="password"],
+  .field > textarea { width: 100%; }
+  .topbar .title { font-size: 18px; }
+  .topbar { margin-bottom: 14px; }
+}
 .concept-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 
 /* 레퍼런스 업로드 */
@@ -249,4 +264,21 @@ textarea { width: 100%; resize: vertical; line-height: 1.6; }
   .card { padding: 14px; }
   .set-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
   .modal { padding: 18px; }
+}
+
+/* 초소형 폰 */
+@media (max-width: 480px) {
+  .main { padding: 14px 12px 46px; }
+  .login-card { padding: 30px 22px; }
+  .login-card .logo { font-size: 44px; }
+  .login-card h1 { font-size: 21px; }
+  .card { padding: 13px; border-radius: 12px; }
+  .topbar .title { font-size: 17px; }
+  .concept-name { font-size: 16px; }
+  .gal-grid { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
+  .emo-actions .btn { font-size: 11px; padding: 6px 6px; }
+  .emo-actions .mini { width: 30px; padding: 6px 0; }
+  .chip { padding: 5px 10px; }
+  .modal { padding: 16px; border-radius: 14px; }
+  .modal-actions { flex-wrap: wrap; }
 }
