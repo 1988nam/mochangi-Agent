@@ -23,14 +23,14 @@ const App = (() => {
   };
   const VALID_SPECS = ['kakao_still', 'kakao_anim', 'kakao_big'];
   const MAX_REFS = 6;
+  // 선택 가능한 이미지 모델(드롭다운). GPT(gpt-image-*)는 코드는 남겨두되 당장은 선택지에서 제외.
+  //  나중에 다시 켜려면 아래에 ['gpt-image-1', 'GPT Image 1 (OpenAI · 투명배경 지원)'] 등을 추가하면 됨.
   const IMAGE_MODELS = [
     ['gemini-3-pro-image', 'Nano Banana Pro (Gemini · 최고 품질·한글)'],
     ['gemini-2.5-flash-image', 'Nano Banana (Gemini · 빠르고 저렴)'],
     ['gemini-3.1-flash-image', 'Nano Banana 2 (Gemini)'],
-    ['gpt-image-1', 'GPT Image 1 (OpenAI · 투명배경 지원)'],
-    ['gpt-image-2', 'GPT Image 2 (OpenAI · 투명배경 미지원)'],
   ];
-  // 모델명으로 엔진(provider) 판별 + 라우팅 — 이미지 생성/편집을 Gemini/OpenAI 중 하나로 보냄
+  // 모델명으로 엔진(provider) 판별 + 라우팅 — 이미지 생성/편집을 Gemini/OpenAI 중 하나로 보냄 (GPT 재활성화 대비 유지)
   function imgProvider(model) { return /^gpt-image/i.test(model || '') ? 'openai' : 'gemini'; }
   const Img = {
     generate: (c, i, o) => imgProvider(o && o.model) === 'openai' ? OpenAIImage.generate(c, i, o) : GeminiImage.generate(c, i, o),
