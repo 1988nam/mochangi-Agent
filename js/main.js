@@ -24,10 +24,18 @@ const App = (() => {
   const VALID_SPECS = ['kakao_still', 'kakao_anim', 'kakao_big'];
   const MAX_REFS = 6;
   const IMAGE_MODELS = [
-    ['gemini-3-pro-image', 'Nano Banana Pro (최고 품질·한글)'],
-    ['gemini-2.5-flash-image', 'Nano Banana (빠르고 저렴)'],
-    ['gemini-3.1-flash-image', 'Nano Banana 2'],
+    ['gemini-3-pro-image', 'Nano Banana Pro (Gemini · 최고 품질·한글)'],
+    ['gemini-2.5-flash-image', 'Nano Banana (Gemini · 빠르고 저렴)'],
+    ['gemini-3.1-flash-image', 'Nano Banana 2 (Gemini)'],
+    ['gpt-image-1', 'GPT Image 1 (OpenAI · 투명배경 지원)'],
+    ['gpt-image-2', 'GPT Image 2 (OpenAI · 투명배경 미지원)'],
   ];
+  // 모델명으로 엔진(provider) 판별 + 라우팅 — 이미지 생성/편집을 Gemini/OpenAI 중 하나로 보냄
+  function imgProvider(model) { return /^gpt-image/i.test(model || '') ? 'openai' : 'gemini'; }
+  const Img = {
+    generate: (c, i, o) => imgProvider(o && o.model) === 'openai' ? OpenAIImage.generate(c, i, o) : GeminiImage.generate(c, i, o),
+    edit: (im, ins, o) => imgProvider(o && o.model) === 'openai' ? OpenAIImage.edit(im, ins, o) : GeminiImage.edit(im, ins, o),
+  };
 
   const state = { activeId: null, refs: [], editTarget: null, genCancel: false };
   const _imgCache = new Map();
@@ -452,7 +460,7 @@ const App = (() => {
       const base = proj.items.find(x => x.baseChar && x.imageId && x.id !== id);
       if (base) { const bim = await Store.getImage(base.imageId); if (bim) refs.push(bim); }
       const concept = { name: proj.concept.name, tagline: proj.concept.tagline, style: proj.concept.style };
-      const img = await GeminiImage.generate(concept, item, { bg: proj.concept.bg, model: proj.concept.model, references: refs });
+      const img = await Img.generate(concept, item, { bg: proj.concept.bg, model: proj.concept.model, references: refs });
       const imgId = Store.newId('img');
       await Store.saveImage(imgId, img);
       _imgCache.set(imgId, Store.dataUrl(img));
@@ -544,7 +552,7 @@ const App = (() => {
     setProc('edit-progress', stepRunning('다듬는 중...'));
     try {
       const cur = await Store.getImage(item.imageId);
-      const img = await GeminiImage.edit(cur, instr, { bg: proj.concept.bg, model: proj.concept.model });
+      const img = await Img.edit(cur, instr, { bg: proj.concept.bg, model: proj.concept.model });
       const imgId = Store.newId('img');
       await Store.saveImage(imgId, img);
       _imgCache.set(imgId, Store.dataUrl(img));

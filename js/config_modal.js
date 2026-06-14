@@ -5,6 +5,7 @@ const ConfigModal = (() => {
   const KEY = 'mochangi_config';
   const FIELDS = {
     GEMINI_API_KEY: 'cfg-gemini-key',
+    OPENAI_API_KEY: 'cfg-openai-key',
     IMAGE_MODEL: 'cfg-image-model',
     TEXT_MODEL: 'cfg-text-model',
     ASPECT_RATIO: 'cfg-aspect',

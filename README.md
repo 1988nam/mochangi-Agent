@@ -39,10 +39,20 @@ npx serve .
 
 ## 설정
 
-- **이미지 모델**: 기본 `gemini-3-pro-image`(Nano Banana Pro · 품질·한글 텍스트 최강). 비용을 아끼려면 `gemini-2.5-flash-image`로 변경.
-- **텍스트 모델**: 컨셉 기획·아이디에이션용. 기본 `gemini-2.5-flash`.
+- **이미지 엔진(모델)**: 프로젝트별로 고릅니다. `gemini-*`(Nano Banana, 기본) 또는 `gpt-image-*`(OpenAI GPT). 모델명으로 엔진이 자동 결정됩니다.
+- **텍스트 모델**: 컨셉 기획·아이디에이션용. **항상 Gemini**(기본 `gemini-2.5-flash`).
 - **이미지 비율**: 카카오 이모티콘은 정사각(`1:1`) 권장.
 - 키·작업물은 **이 브라우저에만** 저장됩니다 (설정·프로젝트 메타 = localStorage, 이미지 = IndexedDB).
+
+### GPT(OpenAI) 이미지로 그리기
+
+나노 바나나(Gemini) 외에 **OpenAI `gpt-image-1`**로도 이모티콘을 그릴 수 있어요.
+
+1. [platform.openai.com](https://platform.openai.com/api-keys)에서 **API 키**를 발급하고 크레딧을 충전합니다.
+   - ⚠️ **ChatGPT Plus/Pro 구독과 API는 별개**예요. 구독만으로는 API가 안 되고, API는 사용한 만큼 따로 과금됩니다.
+2. ⚙️ 설정에서 **OpenAI API Key**를 입력하고, 이미지 모델을 `gpt-image-1`(투명배경 지원)로 바꾸면 그 프로젝트는 GPT로 그립니다.
+3. **GPT 이미지는 배포된 사이트(예: `mochangi.pages.dev`)에서만 동작해요.** 브라우저가 OpenAI를 직접 호출하면 CORS로 막히기 때문에, 같은 오리진의 **Cloudflare Pages Function 프록시**([functions/api/openai-image.js](functions/api/openai-image.js))가 서버에서 중계합니다. (로컬 `file://`로 열면 프록시가 없어 Gemini만 됩니다)
+   - 키는 요청 헤더로 프록시에 전달되어 OpenAI로 중계만 되고, 서버에 저장되지 않습니다(BYO-key).
 
 ## 카카오 이모티콘 규격 (참고 기본값)
 
